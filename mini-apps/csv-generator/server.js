@@ -10,6 +10,20 @@
 const express = require('express');
 const path = require('path');
 const bodyParser = require('body-parser');
+const multer = require('multer');
+const fs = require('fs');
+const Promise = require('bluebird');
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads');
+  },
+  filename: (req, file, cb) => {
+    cb(null, file.originalname);
+  }
+})
+const upload = multer({storage: storage});
+// const upload = multer({dest: 'uploads'});
 
 const app = express();
 const port = 3000;
@@ -17,43 +31,76 @@ const port = 3000;
 // middleware
 // Serve the client files
 app.use(express.static('client'));
-// app.use(bodyParser.json()); // to support JSON-encoded bodies
+app.use(bodyParser.json()); // to support JSON-encoded bodies
 app.use(bodyParser.urlencoded({extended: true})); // to support URL-encoded bodies
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}`)
 })
 
-let generateCSV = (json, headers) => {
+let generateCSV = (jsonData, headers) => {
   let result = [];
-  for (let key in json) {
+  for (let key in jsonData) {
     if (key === 'children') {
-      for (let i = 0; i < json[key].length; i++) {
+      for (let i = 0; i < jsonData[key].length; i++) {
         result[result.length - 1] += '<br>';
-        result = result.concat(generateCSV(json.children[i], headers)[0]);
+        result = result.concat(generateCSV(jsonData.children[i], headers)[0]);
       }
     } else {
       headers[key] = key;
-      result.push(json[key]);
+      result.push(jsonData[key]);
     }
   }
   return [result, headers];
 }
 
-app.post('/generateCSV', (req, res) => {
-  let len = req.body.jsonData.length;
-  if (req.body.jsonData[len - 1] === ';') {
-    req.body.jsonData = req.body.jsonData.slice(0, len - 1);
+let generateCSVAsync = (jsonData, headers) => {
+  let result = [];
+  for (let key in jsonData) {
+    if (key === 'children') {
+      for (let i = 0; i < jsonData[key].length; i++) {
+        result[result.length - 1] += '<br>';
+        result = result.concat(generateCSV(jsonData.children[i], headers)[0]);
+      }
+    } else {
+      headers[key] = key;
+      result.push(jsonData[key]);
+    }
   }
-  let data = JSON.parse(req.body.jsonData);
-  // console.log(data, typeof data);
-  let [rows, headers] = generateCSV(data, [])
-  let result = Object.keys(headers).join() + '<br>' + rows.join();
+  return new Promise((resolve, reject) => {
+    resolve([result, headers])
+  });
+}
+
+app.post('/', upload.single('jsonData'), (req, res) => {
+  console.log(req.file);
+  // fs.readFile('uploads/' + req.file.filename, (err, data) => {
+  //   data = JSON.parse(data.toString());
+  //   console.log('hi there', data);
+  //   let [rows, headers] = generateCSV(data, []);
+  //   let result = Object.keys(headers).join() + '<br>' + rows.join();
   
-  console.log(result);
-  res.send(`<form action="/generateCSV" method="post">
-  <label for="textarea">JSON data</label>
-  <textarea rows="10" cols="100" id="data" name="jsonData"></textarea><br><br>
-  <input type="submit" value="Submit">
-</form><br><p>${result}</p>`);
+  //   console.log(result);
+  //   res.send(`<form action="/" method="post">
+  //     <label for="textarea">JSON data</label>
+  //     <input type="file" id="data" name="jsonData"><br><br>
+  //     <input type="submit" value="Submit">
+  //   </form><br><p>${result}</p>`);
+  // })
+
+  let readFileAsync = Promise.promisify(fs.readFile);
+  readFileAsync('uploads/' + req.file.filename)
+  .then((data) => {
+    data = JSON.parse(data.toString());
+    return generateCSVAsync(data, []);
+  })
+  .then(([rows, headers]) => {
+    let result = Object.keys(headers).map(header => header.toUpperCase()).join() + '<br>' + rows.join();
+    res.send(`<form action="/" method="post">
+      <label for="textarea">JSON data</label>
+      <input type="file" id="data" name="jsonData"><br><br>
+      <input type="submit" value="Submit">
+    </form><br><p>${result}</p>`);
+  })
+  .catch((err) => res.send(err));
 })
