@@ -72,8 +72,9 @@ let generateCSVAsync = (jsonData, headers) => {
   });
 }
 
-app.post('/', upload.single('jsonData'), (req, res) => {
-  console.log(req.file);
+app.post('/', (req, res) => {
+  let data = JSON.parse(req.body.fileData);
+  console.log(data, typeof data);
   // fs.readFile('uploads/' + req.file.filename, (err, data) => {
   //   data = JSON.parse(data.toString());
   //   console.log('hi there', data);
@@ -88,19 +89,23 @@ app.post('/', upload.single('jsonData'), (req, res) => {
   //   </form><br><p>${result}</p>`);
   // })
 
-  let readFileAsync = Promise.promisify(fs.readFile);
-  readFileAsync('uploads/' + req.file.filename)
-  .then((data) => {
-    data = JSON.parse(data.toString());
-    return generateCSVAsync(data, []);
-  })
-  .then(([rows, headers]) => {
-    let result = Object.keys(headers).map(header => header.toUpperCase()).join() + '<br>' + rows.join();
-    res.send(`<form action="/" method="post">
-      <label for="textarea">JSON data</label>
-      <input type="file" id="data" name="jsonData"><br><br>
-      <input type="submit" value="Submit">
-    </form><br><p>${result}</p>`);
-  })
-  .catch((err) => res.send(err));
+  // let readFileAsync = Promise.promisify(fs.readFile);
+  // readFileAsync('uploads/' + JSONData)
+  // .then((data) => {
+  //   data = JSON.parse(data.toString());
+  //   return generateCSVAsync(data, []);
+  // })
+  // .then(([rows, headers]) => {
+  //   let result = Object.keys(headers).map(header => header.toUpperCase()).join() + '<br>' + rows.join();
+  //   res.send(`<form action="/" method="post">
+  //     <label for="textarea">JSON data</label>
+  //     <input type="file" id="data" name="jsonData"><br><br>
+  //     <input type="submit" value="Submit">
+  //   </form><br><p>${result}</p>`);
+  // })
+  // .catch((err) => res.send(err));
+
+  let [rows, headers] = generateCSV(data, []);
+  let result = Object.keys(headers).join() + '<br>' + rows.join();
+  res.send(result);
 })
