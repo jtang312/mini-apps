@@ -43,8 +43,8 @@ let generateCSV = (jsonData, headers) => {
   for (let key in jsonData) {
     if (key === 'children') {
       for (let i = 0; i < jsonData[key].length; i++) {
-        result[result.length - 1] += '<br>';
-        result = result.concat(generateCSV(jsonData.children[i], headers)[0]);
+        result = result + '\n';
+        result += generateCSV(jsonData.children[i], headers)[0];
       }
     } else {
       headers[key] = key;
@@ -59,8 +59,8 @@ let generateCSVAsync = (jsonData, headers) => {
   for (let key in jsonData) {
     if (key === 'children') {
       for (let i = 0; i < jsonData[key].length; i++) {
-        result[result.length - 1] += '<br>';
-        result = result.concat(generateCSV(jsonData.children[i], headers)[0]);
+        result = result + '\n';
+        result += generateCSV(jsonData.children[i], headers)[0];
       }
     } else {
       headers[key] = key;
@@ -74,7 +74,6 @@ let generateCSVAsync = (jsonData, headers) => {
 
 app.post('/', (req, res) => {
   let data = JSON.parse(req.body.fileData);
-  console.log(data, typeof data);
   // fs.readFile('uploads/' + req.file.filename, (err, data) => {
   //   data = JSON.parse(data.toString());
   //   console.log('hi there', data);
@@ -106,6 +105,16 @@ app.post('/', (req, res) => {
   // .catch((err) => res.send(err));
 
   let [rows, headers] = generateCSV(data, []);
-  let result = Object.keys(headers).join() + '<br>' + rows.join();
-  res.send(result);
+  let result = Object.keys(headers).map(header => header.toUpperCase()).join() + '\n' + rows;
+  fs.writeFile('convertedCSV.csv', result, (err) => {
+    if (err) {
+      res.sendStatus(404);
+    }
+    console.log('writeFile sucess');
+  })
+  res.end();
+});
+
+app.get('/download_csv', (req, res) => {
+  res.download('convertedCSV.csv');
 })
