@@ -15,33 +15,21 @@ $(document).ready(() => {
         data: {
           fileData
         },
-        success: (data) => {
-          console.log('success');
-          data = `<div class="results">${data}</div>`;
+        success: (csv) => {
+          console.log('success ', csv);
+          data = `<div class="results">${csv}</div>`;
           $('.results').replaceWith(data);
+          // can also download file on client sice by creating Blob with csv result -> create object URL for Blob
           $('#download').css('display', 'block');
+          const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+          // setting href attribute to locally generated url
+          $('#download').attr('href', url);
+          // set default action of anchor tag to download and set downloaded file name
+          $('#download').attr('download', 'test.csv');
         }
       })
     };
     reader.readAsText(input);
   })
-  
-  // $('#download').on('click', (event) => {
-  //   event.preventDefault();
-  //   const blob = new Blob([csv], { type: 'text/csv' });
-  //   const url = URL.createObjectURL(blob);
-  //   const a = document.createElement('a');
-
-  //   a.href = url;
-  //   a.download = filename || 'download';
-
-  //   const downloadLink = downloadBlob(blob, 'testing.csv');
-      
-  //   // Set the text content of the download link
-  //   downloadLink.textContent = 'Download CSV';
-
-  //   // Attach the link to the DOM
-  //   document.body.appendChild(downloadLink);
-  // })
 });
 

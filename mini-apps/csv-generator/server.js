@@ -1,8 +1,8 @@
-// The server must flatten the JSON hierarchy, mapping each item/object in the JSON to a single line of CSV report 
+// The server must flatten the JSON hierarchy, mapping each item/object in the JSON to a single line of CSV report
 // (see included sample output), where the keys of the JSON objects will be the columns of the CSV report.
 
-// You may assume the JSON data has a regular structure and hierarchy (see included sample file). 
-// In other words, all sibling records at a particular level of the hierarchy will have the same set of properties, but child objects might not contain the same properties. 
+// You may assume the JSON data has a regular structure and hierarchy (see included sample file).
+// In other words, all sibling records at a particular level of the hierarchy will have the same set of properties, but child objects might not contain the same properties.
 // In all cases, every property you encounter must be present in the final CSV output.
 
 // You may also assume that child records in the JSON will always be in a property called `children`.
@@ -13,6 +13,7 @@ const bodyParser = require('body-parser');
 const multer = require('multer');
 const fs = require('fs');
 const Promise = require('bluebird');
+const cors = require('cors');
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
@@ -30,6 +31,7 @@ const port = 3000;
 
 // middleware
 // Serve the client files
+app.use(cors());
 app.use(express.static('client'));
 app.use(bodyParser.json()); // to support JSON-encoded bodies
 app.use(bodyParser.urlencoded({extended: true})); // to support URL-encoded bodies
@@ -74,13 +76,12 @@ let generateCSVAsync = (jsonData, headers) => {
 
 app.post('/', (req, res) => {
   let data = JSON.parse(req.body.fileData);
-  console.log(data);
   // fs.readFile('uploads/' + req.file.filename, (err, data) => {
   //   data = JSON.parse(data.toString());
   //   console.log('hi there', data);
   //   let [rows, headers] = generateCSV(data, []);
   //   let result = Object.keys(headers).join() + '<br>' + rows.join();
-  
+
   //   console.log(result);
   //   res.send(`<form action="/" method="post">
   //     <label for="textarea">JSON data</label>
@@ -112,8 +113,8 @@ app.post('/', (req, res) => {
       res.sendStatus(404);
     }
     console.log('writeFile sucess');
+    res.send(result);
   })
-  res.end();
 });
 
 app.get('/download_csv', (req, res) => {
