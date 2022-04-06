@@ -74,7 +74,6 @@ let generateCSVAsync = (jsonData, headers) => {
 
 app.post('/', (req, res) => {
   let data = JSON.parse(req.body.fileData);
-  console.log(data);
   // fs.readFile('uploads/' + req.file.filename, (err, data) => {
   //   data = JSON.parse(data.toString());
   //   console.log('hi there', data);
